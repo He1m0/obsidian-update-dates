@@ -1,0 +1,11 @@
+{
+    "id": "obsidian-update-dates",
+    "name": "Update Dates",
+    "version": "0.0.1",
+    "minAppVersion": "0.13.11",
+    "description": "Provide functions to automatically update dates.",
+    "author": "Moritz Haid <moritz.haid@tum.de>",
+    "authorUrl": "https://github.com/he1m0",
+    "isDesktopOnly": false
+  }
+  
