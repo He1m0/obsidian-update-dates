@@ -1,13 +1,13 @@
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, Menu } from 'obsidian';
 
 // Remember to rename these classes and interfaces!
 
 interface UpdateDatesSettings {
-	mySetting: string;
+	taskFolder: string;
 }
 
 const DEFAULT_SETTINGS: UpdateDatesSettings = {
-	mySetting: 'default'
+	taskFolder: 'default'
 }
 
 export default class UpdateDatesPlugin extends Plugin {
@@ -18,9 +18,30 @@ export default class UpdateDatesPlugin extends Plugin {
 
 		console.log('loading plugin')
 		// This creates an icon in the left ribbon.
-		const ribbonIconEl = this.addRibbonIcon('dice', 'Update Dates', (evt: MouseEvent) => {
-			// Called when the user clicks the icon.
-			new Notice('This is a notice!');
+		const ribbonIconEl = this.addRibbonIcon('calendar-arrow-down', 'Update Dates', (evt: MouseEvent) => {
+			const menu = new Menu();
+
+			menu.addItem((item) =>
+				item
+				.setTitle('Highlight dates in task-folder')
+				.setIcon('eye')
+				.onClick(() => {
+					this.highlightPastDatesInFolder("tasks")
+					new Notice('Highlighted dates in task-folder');
+				})
+			);
+
+			menu.addItem((item) =>
+				item
+				.setTitle('Unhighlight dates in task-folder')
+				.setIcon('eye-off')
+				.onClick(() => {
+					this.unhighlightPastDatesInFolder("tasks")
+					new Notice('Unhighlighted dates in task-folder');
+				})
+			);
+
+			menu.showAtMouseEvent(evt);
 		});
 		// Perform additional things with the ribbon
 		ribbonIconEl.addClass('my-plugin-ribbon-class');
@@ -75,6 +96,44 @@ export default class UpdateDatesPlugin extends Plugin {
         await this.app.vault.modify(activeFile, updatedContent);
     }
 
+	async highlightPastDatesInFolder(folderPath) {
+		const folder = this.app.vault.getAbstractFileByPath(folderPath);
+	
+		if (!folder || !folder.children) {
+			console.error("Invalid folder path");
+			return;
+		}
+	
+		const today = new Date().toISOString().split('T')[0];
+		const dateRegex = /\b(20[0-9]{2}|19[0-9]{2})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])\b/g;
+	
+		const processFile = async (file) => {
+			if (file.extension === "md") { // Process only markdown files
+				const content = await this.app.vault.read(file);
+				const updatedContent = content.replace(dateRegex, (match) => {
+					return new Date(match) < new Date(today) ? `==${match}==` : match;
+				});
+	
+				if (content !== updatedContent) {
+					await this.app.vault.modify(file, updatedContent);
+				}
+			}
+		};
+	
+		const processFolder = async (folder) => {
+			for (const child of folder.children) {
+				if (!child.children) {
+					await processFile(child);
+				} else if (child.children) {
+					await processFolder(child);
+				}
+			}
+		};
+	
+		await processFolder(folder);
+	}
+	
+
 	async unhighlightDates() {
         const activeFile = this.app.workspace.getActiveFile();
         const content = await this.app.vault.read(activeFile);
@@ -86,6 +145,43 @@ export default class UpdateDatesPlugin extends Plugin {
 
         await this.app.vault.modify(activeFile, updatedContent);
     }
+
+	async unhighlightPastDatesInFolder(folderPath) {
+		const folder = this.app.vault.getAbstractFileByPath(folderPath);
+	
+		if (!folder || !folder.children) {
+			console.error("Invalid folder path");
+			return;
+		}
+	
+		const today = new Date().toISOString().split('T')[0];
+		const dateRegex = /==\b(20[0-9]{2}|19[0-9]{2})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])\b==/g;
+
+		const processFile = async (file) => {
+			if (file.extension === "md") { // Process only markdown files
+				const content = await this.app.vault.read(file);
+				const updatedContent = content.replace(dateRegex, (match) => {
+					return match.slice(2, -2)
+				});
+	
+				if (content !== updatedContent) {
+					await this.app.vault.modify(file, updatedContent);
+				}
+			}
+		};
+	
+		const processFolder = async (folder) => {
+			for (const child of folder.children) {
+				if (!child.children) {
+					await processFile(child);
+				} else if (child.children) {
+					await processFolder(child);
+				}
+			}
+		};
+	
+		await processFolder(folder);
+	}
 
 	async updatePastDatesToToday() {
         const activeFile = this.app.workspace.getActiveFile();
@@ -143,13 +239,13 @@ class SampleSettingTab extends PluginSettingTab {
 		containerEl.empty();
 
 		new Setting(containerEl)
-			.setName('Setting #1')
-			.setDesc('It\'s a secret')
+			.setName('Task folder')
+			.setDesc('This should be a folder of task lists of which you want to modify the dates.')
 			.addText(text => text
-				.setPlaceholder('Enter your secret')
-				.setValue(this.plugin.settings.mySetting)
+				.setPlaceholder('folder')
+				.setValue(this.plugin.settings.taskFolder)
 				.onChange(async (value) => {
-					this.plugin.settings.mySetting = value;
+					this.plugin.settings.taskFolder = value;
 					await this.plugin.saveSettings();
 				}));
 	}
