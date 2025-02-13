@@ -7,7 +7,7 @@ interface UpdateDatesSettings {
 }
 
 const DEFAULT_SETTINGS: UpdateDatesSettings = {
-	taskFolder: 'default'
+	taskFolder: 'tasks'
 }
 
 export default class UpdateDatesPlugin extends Plugin {
@@ -26,8 +26,8 @@ export default class UpdateDatesPlugin extends Plugin {
 				.setTitle('Highlight dates in task-folder')
 				.setIcon('eye')
 				.onClick(() => {
-					this.highlightPastDatesInFolder("tasks")
-					new Notice('Highlighted dates in task-folder');
+					this.highlightPastDatesInFolder(this.settings.taskFolder)
+					new Notice('Highlighted dates in task-folder: ' + this.settings.taskFolder);
 				})
 			);
 
@@ -36,8 +36,18 @@ export default class UpdateDatesPlugin extends Plugin {
 				.setTitle('Unhighlight dates in task-folder')
 				.setIcon('eye-off')
 				.onClick(() => {
-					this.unhighlightPastDatesInFolder("tasks")
-					new Notice('Unhighlighted dates in task-folder');
+					this.unhighlightPastDatesInFolder(this.settings.taskFolder)
+					new Notice('Unhighlighted dates in task-folder: ' + this.settings.taskFolder);
+				})
+			);
+
+			menu.addItem((item) =>
+				item
+				.setTitle('Update dates in task-folder')
+				.setIcon('calendar-check-2')
+				.onClick(() => {
+					this.updatePastDatesInFolder(this.settings.taskFolder)
+					new Notice('Updated dates in task-folder: ' + this.settings.taskFolder);
 				})
 			);
 
@@ -87,11 +97,14 @@ export default class UpdateDatesPlugin extends Plugin {
         const activeFile = this.app.workspace.getActiveFile();
         const content = await this.app.vault.read(activeFile);
         const today = new Date().toISOString().split('T')[0];
+		const unfinishedDateRegex = /- \[ \] .*?\b(20[0-9]{2}|19[0-9]{2})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])\b/g;
         const dateRegex = /\b(20[0-9]{2}|19[0-9]{2})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])\b/g;
 
-        const updatedContent = content.replace(dateRegex, (match) => {
-            return new Date(match) < new Date(today) ? `==${match}==` : match;
-        });
+        const updatedContent = content.replace(unfinishedDateRegex, (line) => {
+			return line.replace(dateRegex, (match) => {
+				return new Date(match) < new Date(today) ? `==${match}==` : match;
+			});
+		})
 
         await this.app.vault.modify(activeFile, updatedContent);
     }
@@ -105,14 +118,17 @@ export default class UpdateDatesPlugin extends Plugin {
 		}
 	
 		const today = new Date().toISOString().split('T')[0];
+		const unfinishedDateRegex = /- \[ \] .*?\b(20[0-9]{2}|19[0-9]{2})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])\b/g;
 		const dateRegex = /\b(20[0-9]{2}|19[0-9]{2})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])\b/g;
 	
 		const processFile = async (file) => {
 			if (file.extension === "md") { // Process only markdown files
 				const content = await this.app.vault.read(file);
-				const updatedContent = content.replace(dateRegex, (match) => {
-					return new Date(match) < new Date(today) ? `==${match}==` : match;
-				});
+				const updatedContent = content.replace(unfinishedDateRegex, (line) => {
+					return line.replace(dateRegex, (match) => {
+						return new Date(match) < new Date(today) ? `==${match}==` : match;
+					});
+				})
 	
 				if (content !== updatedContent) {
 					await this.app.vault.modify(file, updatedContent);
@@ -137,11 +153,14 @@ export default class UpdateDatesPlugin extends Plugin {
 	async unhighlightDates() {
         const activeFile = this.app.workspace.getActiveFile();
         const content = await this.app.vault.read(activeFile);
+		const unfinishedDateRegex = /- \[ \] .*?==\b(20[0-9]{2}|19[0-9]{2})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])\b==/g;
         const dateRegex = /==\b(20[0-9]{2}|19[0-9]{2})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])\b==/g;
 
-        const updatedContent = content.replace(dateRegex, (match) => {
-            return match.slice(2, -2)
-        });
+        const updatedContent = content.replace(unfinishedDateRegex, (line) => {
+			return line.replace(dateRegex, (match) => {
+				return match.slice(2, -2)
+			});
+		})
 
         await this.app.vault.modify(activeFile, updatedContent);
     }
@@ -155,14 +174,17 @@ export default class UpdateDatesPlugin extends Plugin {
 		}
 	
 		const today = new Date().toISOString().split('T')[0];
+		const unfinishedDateRegex = /- \[ \] .*?==\b(20[0-9]{2}|19[0-9]{2})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])\b==/g;
 		const dateRegex = /==\b(20[0-9]{2}|19[0-9]{2})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])\b==/g;
 
 		const processFile = async (file) => {
 			if (file.extension === "md") { // Process only markdown files
 				const content = await this.app.vault.read(file);
-				const updatedContent = content.replace(dateRegex, (match) => {
-					return match.slice(2, -2)
-				});
+				const updatedContent = content.replace(unfinishedDateRegex, (line) => {
+					return line.replace(dateRegex, (match) => {
+						return match.slice(2, -2)
+					});
+				})
 	
 				if (content !== updatedContent) {
 					await this.app.vault.modify(file, updatedContent);
@@ -187,14 +209,59 @@ export default class UpdateDatesPlugin extends Plugin {
         const activeFile = this.app.workspace.getActiveFile();
         const content = await this.app.vault.read(activeFile);
         const today = new Date().toISOString().split('T')[0];
+		const unfinishedDateRegex = /- \[ \] .*?\b(20[0-9]{2}|19[0-9]{2})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])\b/g;
         const dateRegex = /\b(20[0-9]{2}|19[0-9]{2})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])\b/g;
 
-        const updatedContent = content.replace(dateRegex, (match) => {
-            return new Date(match) < new Date(today) ? today : match;
+        const updatedContent = content.replace(unfinishedDateRegex, (line) => {
+			console.log(line)
+            return line.replace(dateRegex, (dateMatch) => {
+				return new Date(dateMatch) < new Date(today) ? today : dateMatch;
+			})
         });
 
         await this.app.vault.modify(activeFile, updatedContent);
     }
+
+	async updatePastDatesInFolder(folderPath) {
+		const folder = this.app.vault.getAbstractFileByPath(folderPath);
+	
+		if (!folder || !folder.children) {
+			console.error("Invalid folder path");
+			return;
+		}
+	
+		const today = new Date().toISOString().split('T')[0];
+		const unfinishedDateRegex = /- \[ \] .*?\b(20[0-9]{2}|19[0-9]{2})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])\b/g;
+		const dateRegex = /\b(20[0-9]{2}|19[0-9]{2})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])\b/g;
+	
+		const processFile = async (file) => {
+			if (file.extension === "md") { // Process only markdown files
+				const content = await this.app.vault.read(file);
+				const updatedContent = content.replace(unfinishedDateRegex, (line) => {
+					console.log(line)
+					return line.replace(dateRegex, (dateMatch) => {
+						return new Date(dateMatch) < new Date(today) ? today : dateMatch;
+					})
+				});
+	
+				if (content !== updatedContent) {
+					await this.app.vault.modify(file, updatedContent);
+				}
+			}
+		};
+	
+		const processFolder = async (folder) => {
+			for (const child of folder.children) {
+				if (!child.children) {
+					await processFile(child);
+				} else if (child.children) {
+					await processFolder(child);
+				}
+			}
+		};
+	
+		await processFolder(folder);
+	}
 
 	onunload() {
 		console.log('unloading plugin')
