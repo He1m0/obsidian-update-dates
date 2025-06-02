@@ -177,6 +177,7 @@ await updateDatesPlugin.highlightPastDatesInFolderWithExclusions(
 - Task Filtering does not work as expected when multiple date attributes are selected. This is due to the current implementation using OR logic instead of AND logic. A fix is in progress.
 - Task Filtering currently tries to implement AND logic. Need to implement possibility to use OR logic as well.
 - Updating and highlighting dates when "Date type: Both date types" only updates/highlights the first date found in the line. 
+- Updating tasks with date set to today to another date in the future will not work (because comparison is still done to today?)
 
 ## Contributing
 
@@ -186,6 +187,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 - [ ] Fix AND logic for task filtering
 - [ ] Fix date type selection for highlighting and updating
 - [ ] Add to switch between AND and OR logic for task filtering
+- [ ] Fix updating todays date to a future date
 
 ## License
 
