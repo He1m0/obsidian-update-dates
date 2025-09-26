@@ -266,7 +266,7 @@ export default class UpdateDatesPlugin extends Plugin {
         const updatedContent = content.replace(unfinishedDateRegex, (line) => {
 			console.log(line)
             return line.replace(dateRegex, (dateMatch) => {
-				return new Date(dateMatch) < new Date(today) ? today : dateMatch;
+				return new Date(dateMatch) <= new Date(today) ? today : dateMatch;
 			})
         });
 
@@ -290,7 +290,7 @@ export default class UpdateDatesPlugin extends Plugin {
 				const updatedContent = content.replace(unfinishedDateRegex, (line) => {
 					console.log(line)
 					return line.replace(dateRegex, (dateMatch) => {
-						return new Date(dateMatch) < new Date(today) ? today : dateMatch;
+						return new Date(dateMatch) <= new Date(today) ? today : dateMatch;
 					})
 				});
 	
@@ -657,7 +657,7 @@ export default class UpdateDatesPlugin extends Plugin {
 					return line.replace(dateRegex, (match) => {
 						// Extract just the date part without the emoji
 						const dateMatch = match.match(/\b(20[0-9]{2}|19[0-9]{2})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])\b/);
-						if (dateMatch && new Date(dateMatch[0]) < new Date(today)) {
+						if (dateMatch && new Date(dateMatch[0]) <= new Date(today)) {
 							return match.replace(dateMatch[0], today);
 						}
 						return match;
