@@ -360,7 +360,7 @@ export default class UpdateDatesPlugin extends Plugin {
 				const content = await this.app.vault.read(file);
 				let updatedContent = content;
 				
-				// Process each task line that matches our criteria				
+				// Process each task line that matches our criteria
 				updatedContent = content.replace(unfinishedDateRegex, (line: string) => {					// Skip if line doesn't match attribute filters
 					if (taskFilters) {
 						// Check priority filters
@@ -372,28 +372,38 @@ export default class UpdateDatesPlugin extends Plugin {
 								'high': '⏫',
 								'highest': '🔺'
 							};
-							
-							// Check if any of the selected priorities match
-							let priorityMatched = false;
-							
+
+							// Validate mutually exclusive priority combinations
+							const hasNormal = taskFilters.priorities.includes('normal');
+							const hasEmojiPriorities = taskFilters.priorities.some(p => p !== 'normal');
+							const hasMultipleEmojis = taskFilters.priorities.filter(p => p !== 'normal').length > 1;
+
+							// Skip impossible combinations: normal + emoji priorities, or multiple emoji priorities
+							if ((hasNormal && hasEmojiPriorities) || hasMultipleEmojis) {
+								return line; // Skip processing this line due to invalid priority combination
+							}
+
+							// Check if ALL selected priorities match (AND logic)
+							let allPrioritiesMatch = true;
+
 							// For normal priority (no emoji)
 							if (taskFilters.priorities.includes('normal')) {
 								const hasAnyPriorityEmoji = Object.values(priorityEmojis).some(e => line.includes(e));
-								if (!hasAnyPriorityEmoji) {
-									priorityMatched = true;
+								if (hasAnyPriorityEmoji) {
+									allPrioritiesMatch = false;
 								}
 							}
-							
-							// For emoji-based priorities
+
+							// For emoji-based priorities - check that ALL selected ones are present
 							for (const priority of taskFilters.priorities) {
-								if (priority !== 'normal' && line.includes(priorityEmojis[priority])) {
-									priorityMatched = true;
+								if (priority !== 'normal' && !line.includes(priorityEmojis[priority])) {
+									allPrioritiesMatch = false;
 									break;
 								}
 							}
-							
-							// Skip if no priorities match
-							if (!priorityMatched) {
+
+							// Skip if not all priorities match
+							if (!allPrioritiesMatch) {
 								return line;
 							}
 						}
@@ -570,7 +580,7 @@ export default class UpdateDatesPlugin extends Plugin {
 				const content = await this.app.vault.read(file);
 				let updatedContent = content;
 				
-				// Process each task line that matches our criteria				
+				// Process each task line that matches our criteria
 				updatedContent = content.replace(taskRegex, (line: string) => {
 					// Skip if line doesn't match attribute filters
 					if (taskFilters) {
@@ -583,28 +593,38 @@ export default class UpdateDatesPlugin extends Plugin {
 								'high': '⏫',
 								'highest': '🔺'
 							};
-							
-							// Check if any of the selected priorities match
-							let priorityMatched = false;
-							
+
+							// Validate mutually exclusive priority combinations
+							const hasNormal = taskFilters.priorities.includes('normal');
+							const hasEmojiPriorities = taskFilters.priorities.some(p => p !== 'normal');
+							const hasMultipleEmojis = taskFilters.priorities.filter(p => p !== 'normal').length > 1;
+
+							// Skip impossible combinations: normal + emoji priorities, or multiple emoji priorities
+							if ((hasNormal && hasEmojiPriorities) || hasMultipleEmojis) {
+								return line; // Skip processing this line due to invalid priority combination
+							}
+
+							// Check if ALL selected priorities match (AND logic)
+							let allPrioritiesMatch = true;
+
 							// For normal priority (no emoji)
 							if (taskFilters.priorities.includes('normal')) {
 								const hasAnyPriorityEmoji = Object.values(priorityEmojis).some(e => line.includes(e));
-								if (!hasAnyPriorityEmoji) {
-									priorityMatched = true;
+								if (hasAnyPriorityEmoji) {
+									allPrioritiesMatch = false;
 								}
 							}
-							
-							// For emoji-based priorities
+
+							// For emoji-based priorities - check that ALL selected ones are present
 							for (const priority of taskFilters.priorities) {
-								if (priority !== 'normal' && line.includes(priorityEmojis[priority])) {
-									priorityMatched = true;
+								if (priority !== 'normal' && !line.includes(priorityEmojis[priority])) {
+									allPrioritiesMatch = false;
 									break;
 								}
 							}
-							
-							// Skip if no priorities match
-							if (!priorityMatched) {
+
+							// Skip if not all priorities match
+							if (!allPrioritiesMatch) {
 								return line;
 							}
 						}
