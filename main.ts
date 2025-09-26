@@ -350,9 +350,9 @@ export default class UpdateDatesPlugin extends Plugin {
 			unfinishedDateRegex = new RegExp(taskStatusRegex.source + `.*?⏳ \\b(20[0-9]{2}|19[0-9]{2})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])\\b`, 'g');
 			dateRegex = /⏳ \b(20[0-9]{2}|19[0-9]{2})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])\b/g;
 		} else {
-			// Match both date types (with or without emoji)
+			// Match both date types - process both due dates (📅) and scheduled dates (⏳) as well as plain dates
 			unfinishedDateRegex = new RegExp(taskStatusRegex.source + `.*?\\b(20[0-9]{2}|19[0-9]{2})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])\\b`, 'g');
-			dateRegex = /\b(20[0-9]{2}|19[0-9]{2})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])\b/g;
+			dateRegex = /(?:📅\s+|⏳\s+)?\b(20[0-9]{2}|19[0-9]{2})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])\b/g;
 		}
 		
 		const processFile = async (file: TFile) => {
@@ -435,7 +435,8 @@ export default class UpdateDatesPlugin extends Plugin {
 						// Extract just the date part without the emoji
 						const dateMatch = match.match(/\b(20[0-9]{2}|19[0-9]{2})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])\b/);
 						if (dateMatch && new Date(dateMatch[0]) < new Date(today)) {
-							return match.includes(dateMatch[0]) ? match.replace(dateMatch[0], `==${dateMatch[0]}==`) : match;
+							// Replace the date part while preserving any emoji prefix
+							return match.replace(dateMatch[0], `==${dateMatch[0]}==`);
 						}
 						return match;
 					});
@@ -491,7 +492,7 @@ export default class UpdateDatesPlugin extends Plugin {
 			unfinishedDateRegex = /- \[ \] .*?⏳ .*?==\b(20[0-9]{2}|19[0-9]{2})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])\b==/g;
 			dateRegex = /==\b(20[0-9]{2}|19[0-9]{2})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])\b==/g;
 		} else {
-			// Match both date types
+			// Match both date types - process both due dates (📅) and scheduled dates (⏳) as well as plain dates
 			unfinishedDateRegex = /- \[ \] .*?==\b(20[0-9]{2}|19[0-9]{2})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])\b==/g;
 			dateRegex = /==\b(20[0-9]{2}|19[0-9]{2})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])\b==/g;
 		}
@@ -570,9 +571,9 @@ export default class UpdateDatesPlugin extends Plugin {
 			taskRegex = new RegExp(taskStatusRegex.source + `.*?⏳ \\b(20[0-9]{2}|19[0-9]{2})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])\\b`, 'g');
 			dateRegex = /⏳ \b(20[0-9]{2}|19[0-9]{2})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])\b/g;
 		} else {
-			// Match both date types
+			// Match both date types - process both due dates (📅) and scheduled dates (⏳) as well as plain dates
 			taskRegex = new RegExp(taskStatusRegex.source + `.*?\\b(20[0-9]{2}|19[0-9]{2})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])\\b`, 'g');
-			dateRegex = /\b(20[0-9]{2}|19[0-9]{2})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])\b/g;
+			dateRegex = /(?:📅\s+|⏳\s+)?\b(20[0-9]{2}|19[0-9]{2})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])\b/g;
 		}
 	
 		const processFile = async (file: TFile) => {
